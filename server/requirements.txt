@@ -1,7 +1,7 @@
 Flask>=2.0
-pymongo[srv]>=4.0  # Use [srv] if connecting via mongodb+srv:// URI
+pymongo[srv]>=4.0
 python-dotenv>=0.19
-werkzeug>=2.0 # For password hashing
-requests # Although not used directly in server, good to have consistent env
-# For production deployment (e.g., Gunicorn):
-# gunicorn
+werkzeug>=2.0
+requests
+pytz # <-- ADD THIS LINE
+# gunicorn # Optional for production

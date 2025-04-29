@@ -5,8 +5,9 @@
 {% block content %}
     <h2>Details for Employee: {{ employee.employee_id }}</h2>
     <p><strong>Name:</strong> {{ employee.get('name', 'N/A') }}</p>
-    <p><strong>First Seen (UTC):</strong> {{ employee.first_seen.strftime('%Y-%m-%d %H:%M:%S') if employee.first_seen else 'N/A' }}</p>
-    <p><strong>Last Seen (UTC):</strong> {{ employee.last_seen.strftime('%Y-%m-%d %H:%M:%S') if employee.last_seen else 'N/A' }}</p>
+    {# Use the 'to_ist' filter #}
+    <p><strong>First Seen (IST):</strong> {{ employee.first_seen | to_ist if employee.first_seen else 'N/A' }}</p>
+    <p><strong>Last Seen (IST):</strong> {{ employee.last_seen | to_ist if employee.last_seen else 'N/A' }}</p>
 
     <hr>
 
@@ -16,9 +17,11 @@
             {% for shot in screenshots %}
                 <div class="screenshot-item">
                      <a href="{{ shot.url_path }}" target="_blank">
-                        <img src="{{ shot.url_path }}" alt="Screenshot for {{ employee.employee_id }} at {{ shot.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}" class="thumbnail">
+                        {# Alt text can remain UTC or be IST, user choice. Let's make it IST here too #}
+                        <img src="{{ shot.url_path }}" alt="Screenshot for {{ employee.employee_id }} at {{ shot.timestamp | to_ist if shot.timestamp else 'N/A' }}" class="thumbnail">
                      </a>
-                     <p>{{ shot.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</p>
+                     {# Use the 'to_ist' filter for display #}
+                     <p>{{ shot.timestamp | to_ist if shot.timestamp else 'N/A' }}</p>
                 </div>
             {% endfor %}
         </div>
@@ -33,16 +36,19 @@
         <table>
             <thead>
                 <tr>
-                    <th>Timestamp (UTC)</th>
+                    <th>Timestamp (IST)</th> {# Changed Header #}
                     <th>Active Window Title</th>
+                    <th>Idle Time (s)</th> {# Added Idle Time Display #}
                     <!-- Add more columns if you track more data -->
                 </tr>
             </thead>
             <tbody>
                 {% for log in activity_logs %}
                     <tr>
-                        <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        {# Use the 'to_ist' filter #}
+                        <td>{{ log.timestamp | to_ist if log.timestamp else 'N/A' }}</td>
                         <td>{{ log.active_window_title }}</td>
+                        <td>{{ log.get('system_idle_time_seconds', 'N/A') }}</td> {# Display idle time #}
                     </tr>
                 {% endfor %}
             </tbody>

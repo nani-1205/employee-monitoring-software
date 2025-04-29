@@ -10,8 +10,8 @@
                 <tr>
                     <th>Employee ID</th>
                     <th>Name (if known)</th>
-                    <th>First Seen (UTC)</th>
-                    <th>Last Seen (UTC)</th>
+                    <th>First Seen (IST)</th> {# Changed Header #}
+                    <th>Last Seen (IST)</th>  {# Changed Header #}
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -20,8 +20,9 @@
                     <tr>
                         <td>{{ emp.employee_id }}</td>
                         <td>{{ emp.get('name', 'N/A') }}</td>
-                         <td>{{ emp.first_seen.strftime('%Y-%m-%d %H:%M:%S') if emp.first_seen else 'N/A' }}</td>
-                        <td>{{ emp.last_seen.strftime('%Y-%m-%d %H:%M:%S') if emp.last_seen else 'N/A' }}</td>
+                        {# Use the 'to_ist' filter #}
+                        <td>{{ emp.first_seen | to_ist if emp.first_seen else 'N/A' }}</td>
+                        <td>{{ emp.last_seen | to_ist if emp.last_seen else 'N/A' }}</td>
                         <td><a href="{{ url_for('main.employee_detail', employee_id=emp.employee_id) }}">View Details</a></td>
                     </tr>
                 {% endfor %}
