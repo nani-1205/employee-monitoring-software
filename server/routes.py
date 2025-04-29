@@ -43,38 +43,44 @@ bp = Blueprint('main', __name__)
 @client_auth_required
 def api_report_activity():
     """Receives activity data from the client agent."""
-    data = request.json
-    # --- ADDED LOGGING ---
-    logger.info(f"Received /api/report data from {request.remote_addr}: {data}")
-    # --- END ADDED LOGGING ---
+    # Check if content type is application/json
+    if not request.is_json:
+        logger.warning(f"/api/report error from {request.remote_addr}: Content-Type is not application/json.")
+        return jsonify({"status": "error", "message": "Invalid Content-Type, expected application/json"}), 415 # Unsupported Media Type
 
-    if not data or 'employee_id' not in data or 'timestamp_utc' not in data:
-        # --- ADDED LOGGING ---
+    data = request.get_json() # Use get_json() for better error handling if not JSON
+    if data is None:
+        logger.warning(f"/api/report error from {request.remote_addr}: Failed to decode JSON.")
+        return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
+
+    logger.info(f"Received /api/report data from {request.remote_addr}: {data}")
+
+    if 'employee_id' not in data or 'timestamp_utc' not in data:
         logger.warning(f"/api/report missing required data. Received: {data}")
-        # --- END ADDED LOGGING ---
-        return jsonify({"status": "error", "message": "Missing required data (employee_id, timestamp_utc)"}), 400 # More specific message
+        return jsonify({"status": "error", "message": "Missing required data (employee_id, timestamp_utc)"}), 400
 
     employee_id = data.get('employee_id')
-    timestamp_str = data.get('timestamp_utc') # Expecting ISO 8601 format string
+    timestamp_str = data.get('timestamp_utc') # Expecting ISO 8601 format string like YYYY-MM-DDTHH:MM:SS+00:00
     active_window = data.get('active_window', 'N/A') # Optional
     idle_time = data.get('system_idle_time', 0) # Get idle time if sent
 
     try:
         # Parse timestamp string to datetime object (UTC)
-        # --- ADDED LOGGING ---
         logger.info(f"Attempting to parse timestamp for /api/report: {timestamp_str}")
-        # --- END ADDED LOGGING ---
-        timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        # Ensure it's timezone-aware (UTC)
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
-        # --- ADDED LOGGING ---
+        # --- REMOVED .replace("Z", "+00:00") ---
+        timestamp = datetime.fromisoformat(timestamp_str)
+        # --- Ensure timezone aware if parsing somehow resulted in naive (shouldn't with offset) ---
+        if timestamp.tzinfo is None:
+             logger.warning(f"Parsed timestamp '{timestamp_str}' resulted in naive datetime. Assuming UTC.")
+             timestamp = timestamp.replace(tzinfo=timezone.utc)
+        elif timestamp.tzinfo != timezone.utc:
+             logger.warning(f"Parsed timestamp '{timestamp_str}' has non-UTC timezone ({timestamp.tzinfo}). Converting to UTC.")
+             timestamp = timestamp.astimezone(timezone.utc)
+
         logger.info(f"Successfully parsed timestamp for /api/report: {timestamp}")
-        # --- END ADDED LOGGING ---
-    except ValueError as e:
-        # --- ADDED LOGGING ---
-        logger.error(f"/api/report invalid timestamp format '{timestamp_str}': {e}")
-        # --- END ADDED LOGGING ---
-        return jsonify({"status": "error", "message": f"Invalid timestamp format: {timestamp_str}"}), 400 # Return invalid string
+    except (ValueError, TypeError) as e: # Catch TypeError if timestamp_str is not a string
+        logger.error(f"/api/report invalid timestamp format or type '{timestamp_str}': {e}")
+        return jsonify({"status": "error", "message": f"Invalid timestamp format: {timestamp_str}"}), 400
 
     try:
         # Add activity log to the database
@@ -100,103 +106,102 @@ def api_upload_screenshot():
         return jsonify({"status": "error", "message": "No screenshot file part"}), 400
 
     file = request.files['screenshot']
-    employee_id = request.form.get('employee_id') # Use .get() for safety
-    timestamp_str = request.form.get('timestamp_utc') # Use .get() for safety
+    # Use request.form.get for safety, in case keys are missing
+    employee_id = request.form.get('employee_id')
+    timestamp_str = request.form.get('timestamp_utc')
 
-    # --- ADDED LOGGING ---
     logger.info(f"Received /api/upload_screenshot form data: employee_id={employee_id}, timestamp_utc={timestamp_str}")
     if file:
         logger.info(f"Received /api/upload_screenshot file: filename='{file.filename}', content_type='{file.content_type}'")
     else:
-         logger.warning(f"/api/upload_screenshot file object is empty/invalid") # Should not happen if 'screenshot' key exists
-    # --- END ADDED LOGGING ---
+         logger.warning(f"/api/upload_screenshot file object is empty/invalid")
 
-    if not employee_id or not timestamp_str: # Check if .get() returned None
+    if not employee_id or not timestamp_str:
          logger.warning(f"/api/upload_screenshot missing required form data. Received: employee_id={employee_id}, timestamp_utc={timestamp_str}")
          return jsonify({"status": "error", "message": "Missing required form data (employee_id, timestamp_utc)"}), 400
 
-    if file.filename == '':
-        logger.warning(f"/api/upload_screenshot received empty filename.")
-        return jsonify({"status": "error", "message": "No selected file"}), 400
+    if not file or file.filename == '':
+        logger.warning(f"/api/upload_screenshot received empty filename or invalid file object.")
+        return jsonify({"status": "error", "message": "No valid file selected/sent"}), 400
 
-    # Proceed only if file seems valid initially
-    if file:
-        try:
-            # Parse timestamp string to datetime object (UTC)
-            # --- ADDED LOGGING ---
-            logger.info(f"Attempting to parse timestamp for /api/upload_screenshot: {timestamp_str}")
-            # --- END ADDED LOGGING ---
-            timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-            # Ensure it's timezone-aware (UTC)
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-            # --- ADDED LOGGING ---
-            logger.info(f"Successfully parsed timestamp for /api/upload_screenshot: {timestamp}")
-            # --- END ADDED LOGGING ---
-        except ValueError as e:
-            # --- ADDED LOGGING ---
-            logger.error(f"/api/upload_screenshot invalid timestamp format '{timestamp_str}': {e}")
-            # --- END ADDED LOGGING ---
-            return jsonify({"status": "error", "message": f"Invalid timestamp format: {timestamp_str}"}), 400
+    # Proceed only if file seems valid
+    try:
+        # Parse timestamp string to datetime object (UTC)
+        logger.info(f"Attempting to parse timestamp for /api/upload_screenshot: {timestamp_str}")
+        # --- REMOVED .replace("Z", "+00:00") ---
+        timestamp = datetime.fromisoformat(timestamp_str)
+        # --- Ensure timezone aware if parsing somehow resulted in naive ---
+        if timestamp.tzinfo is None:
+             logger.warning(f"Parsed timestamp '{timestamp_str}' resulted in naive datetime. Assuming UTC.")
+             timestamp = timestamp.replace(tzinfo=timezone.utc)
+        elif timestamp.tzinfo != timezone.utc:
+             logger.warning(f"Parsed timestamp '{timestamp_str}' has non-UTC timezone ({timestamp.tzinfo}). Converting to UTC.")
+             timestamp = timestamp.astimezone(timezone.utc)
 
-        # Create a secure filename (timestamp + original extension)
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else '.png' # Default extension
-        # Use timestamp for filename to ensure uniqueness and order
-        filename = secure_filename(f"{timestamp.strftime('%Y%m%d_%H%M%S_%f')}{file_ext}")
+        logger.info(f"Successfully parsed timestamp for /api/upload_screenshot: {timestamp}")
+    except (ValueError, TypeError) as e: # Catch TypeError if timestamp_str is not a string
+        logger.error(f"/api/upload_screenshot invalid timestamp format or type '{timestamp_str}': {e}")
+        return jsonify({"status": "error", "message": f"Invalid timestamp format: {timestamp_str}"}), 400
 
-        # Create employee-specific directory if it doesn't exist
-        employee_dir = os.path.join(config.SCREENSHOT_STORAGE_PATH, employee_id)
-        try:
-            os.makedirs(employee_dir, exist_ok=True)
-        except OSError as e:
-             logger.error(f"Error creating directory {employee_dir}: {e}")
-             return jsonify({"status": "error", "message": "Could not create storage directory"}), 500
+    # Create a secure filename (timestamp + original extension)
+    file_ext = os.path.splitext(file.filename)[1] if file.filename else '.png' # Default extension
+    # Use timestamp for filename to ensure uniqueness and order
+    filename = secure_filename(f"{timestamp.strftime('%Y%m%d_%H%M%S_%f')}{file_ext}")
 
-        save_path = os.path.join(employee_dir, filename)
+    # Create employee-specific directory if it doesn't exist
+    employee_dir = os.path.join(config.SCREENSHOT_STORAGE_PATH, employee_id)
+    try:
+        os.makedirs(employee_dir, exist_ok=True)
+    except OSError as e:
+            logger.error(f"Error creating directory {employee_dir}: {e}")
+            return jsonify({"status": "error", "message": "Could not create storage directory"}), 500
 
-        try:
-            file.save(save_path)
-            logger.info(f"Screenshot saved for {employee_id} at {save_path}")
+    save_path = os.path.join(employee_dir, filename)
 
-            # Add screenshot metadata record to the database
-            models.add_screenshot_record(employee_id, timestamp, filename) # Store just filename
+    try:
+        file.save(save_path)
+        logger.info(f"Screenshot saved for {employee_id} at {save_path}")
 
-            return jsonify({"status": "success", "message": "Screenshot uploaded"}), 200
-        except ConnectionError as e:
-             logger.error(f"API DB connection error during /api/upload_screenshot: {e}")
-             # Consider deleting the saved file if DB operation fails
-             if os.path.exists(save_path):
+        # Add screenshot metadata record to the database
+        models.add_screenshot_record(employee_id, timestamp, filename) # Store just filename
+
+        return jsonify({"status": "success", "message": "Screenshot uploaded"}), 200
+    except ConnectionError as e:
+            logger.error(f"API DB connection error during /api/upload_screenshot: {e}")
+            # Consider deleting the saved file if DB operation fails
+            if os.path.exists(save_path):
                 try:
                     os.remove(save_path)
                     logger.info(f"Removed partially saved file due to DB error: {save_path}")
                 except OSError as remove_err:
-                     logger.error(f"Error removing file {save_path} after DB error: {remove_err}")
-             return jsonify({"status": "error", "message": "Database connection error"}), 500
-        except Exception as e:
-            logger.error(f"Error processing screenshot upload for {employee_id}: {e}", exc_info=True)
-            # Clean up saved file if error occurs
-            if os.path.exists(save_path):
-                try:
-                    os.remove(save_path)
-                    logger.info(f"Removed partially saved file due to processing error: {save_path}")
-                except OSError as remove_err:
-                    logger.error(f"Error removing file {save_path} after processing error: {remove_err}")
-            return jsonify({"status": "error", "message": "Internal server error during upload"}), 500
-
-    # Fallback if file object was problematic initially (should be rare)
-    logger.error(f"/api/upload_screenshot file processing failed unexpectedly for employee {employee_id}.")
-    return jsonify({"status": "error", "message": "File processing failed"}), 500
-
+                        logger.error(f"Error removing file {save_path} after DB error: {remove_err}")
+            return jsonify({"status": "error", "message": "Database connection error"}), 500
+    except Exception as e:
+        logger.error(f"Error processing screenshot upload for {employee_id}: {e}", exc_info=True)
+        # Clean up saved file if error occurs
+        if os.path.exists(save_path):
+            try:
+                os.remove(save_path)
+                logger.info(f"Removed partially saved file due to processing error: {save_path}")
+            except OSError as remove_err:
+                logger.error(f"Error removing file {save_path} after processing error: {remove_err}")
+        return jsonify({"status": "error", "message": "Internal server error during upload"}), 500
 
 # --- Web UI Routes (for Admin) ---
 # (No changes needed in the Web UI routes below this line)
-# ... (keep the login, logout, dashboard, employee_detail, serve_screenshot routes as they were) ...
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username') # Use .get for safety
+        password = request.form.get('password')
         error = None
+
+        if not username or not password:
+             error = 'Username and password are required.'
+             flash(error)
+             return render_template('login.html')
+
         try:
             user = models.get_user(username)
 
@@ -207,7 +212,7 @@ def login():
                 session.clear()
                 session['user_id'] = str(user['_id']) # Store MongoDB ObjectId as string
                 session['username'] = user['username']
-                logger.info(f"Admin user '{username}' logged in.")
+                logger.info(f"Admin user '{username}' logged in from {request.remote_addr}.")
                 return redirect(url_for('main.dashboard'))
 
         except ConnectionError as e:
@@ -226,10 +231,11 @@ def login():
     return render_template('login.html')
 
 @bp.route('/logout')
+@login_required # Make sure user is logged in to log out
 def logout():
     username = session.get('username', 'Unknown user')
     session.clear()
-    logger.info(f"User '{username}' logged out.")
+    logger.info(f"User '{username}' logged out from {request.remote_addr}.")
     flash('You were successfully logged out.')
     return redirect(url_for('main.login'))
 
@@ -255,6 +261,12 @@ def dashboard():
 def employee_detail(employee_id):
     """Shows details, activity logs, and screenshots for a specific employee."""
     try:
+        # Sanitize employee_id? Basic check:
+        if not employee_id or not employee_id.isalnum(): # Allow only alphanumeric IDs? Adjust as needed.
+             logger.warning(f"Invalid employee_id format requested: {employee_id}")
+             flash('Invalid employee ID format.', 'error')
+             return redirect(url_for('main.dashboard'))
+
         employee = models.get_employee_by_id(employee_id)
         if not employee:
             flash(f'Employee with ID {employee_id} not found.', 'warning')
@@ -278,26 +290,42 @@ def employee_detail(employee_id):
 
 
 # --- Route for serving stored screenshots ---
-@bp.route('/screenshots/<employee_id>/<filename>')
+@bp.route('/screenshots/<path:employee_id>/<path:filename>') # Use path converter for more flexibility if needed
 @login_required # Ensure only logged-in admins can access screenshot files directly
 def serve_screenshot(employee_id, filename):
     """Serves a specific screenshot file."""
-    # Basic path traversal prevention (Flask's send_from_directory helps)
-    if '..' in employee_id or '/' in employee_id or '..' in filename or '/' in filename:
-         logger.warning(f"Potential path traversal attempt: {employee_id}/{filename}")
+    # Path traversal check (already partially handled by werkzeug/flask)
+    # secure_filename can help sanitize filename, but employee_id needs care
+    if '..' in employee_id or employee_id.startswith('/'):
+         logger.warning(f"Potential path traversal attempt in employee_id: {employee_id}")
          abort(404)
+    if '..' in filename or filename.startswith('/'):
+        logger.warning(f"Potential path traversal attempt in filename: {filename}")
+        abort(404)
 
-    screenshot_dir = os.path.join(config.SCREENSHOT_STORAGE_PATH, employee_id)
-    # Check if file exists within the designated directory
-    if not os.path.isfile(os.path.join(screenshot_dir, filename)): # Use isfile for better check
-        logger.warning(f"Screenshot file not found or is not a file: {employee_id}/{filename}")
+
+    # Construct the absolute path robustly
+    screenshot_dir = os.path.abspath(os.path.join(config.SCREENSHOT_STORAGE_PATH, employee_id))
+
+    # Security check: Ensure the requested path is *within* the allowed base storage path
+    if not screenshot_dir.startswith(os.path.abspath(config.SCREENSHOT_STORAGE_PATH)):
+        logger.error(f"Security Alert: Attempt to access path outside designated storage: {screenshot_dir}")
+        abort(403) # Forbidden
+
+
+    file_path = os.path.join(screenshot_dir, filename)
+
+    # Check if file exists and is actually a file
+    if not os.path.isfile(file_path):
+        logger.warning(f"Screenshot file not found or is not a file: {file_path}")
         abort(404)
     try:
-        # send_from_directory is safer against path traversal
+        logger.debug(f"Serving screenshot: {file_path}")
         return send_from_directory(screenshot_dir, filename)
     except FileNotFoundError:
-         logger.error(f"File not found error during send_from_directory: {employee_id}/{filename}")
+         # This shouldn't happen if os.path.isfile passed, but handle defensively
+         logger.error(f"File not found error during send_from_directory (unexpected): {file_path}")
          abort(404)
     except Exception as e:
-        logger.error(f"Error serving screenshot {employee_id}/{filename}: {e}", exc_info=True)
+        logger.error(f"Error serving screenshot {file_path}: {e}", exc_info=True)
         abort(500)
