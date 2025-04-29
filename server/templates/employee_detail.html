@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Details for {{ employee.employee_id }} - Employee Monitor{% endblock %}
+
+{% block content %}
+    <h2>Details for Employee: {{ employee.employee_id }}</h2>
+    <p><strong>Name:</strong> {{ employee.get('name', 'N/A') }}</p>
+    <p><strong>First Seen (UTC):</strong> {{ employee.first_seen.strftime('%Y-%m-%d %H:%M:%S') if employee.first_seen else 'N/A' }}</p>
+    <p><strong>Last Seen (UTC):</strong> {{ employee.last_seen.strftime('%Y-%m-%d %H:%M:%S') if employee.last_seen else 'N/A' }}</p>
+
+    <hr>
+
+    <h3>Recent Screenshots (Newest First)</h3>
+    {% if screenshots %}
+        <div class="screenshot-gallery">
+            {% for shot in screenshots %}
+                <div class="screenshot-item">
+                     <a href="{{ shot.url_path }}" target="_blank">
+                        <img src="{{ shot.url_path }}" alt="Screenshot for {{ employee.employee_id }} at {{ shot.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}" class="thumbnail">
+                     </a>
+                     <p>{{ shot.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No screenshots available for this employee.</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Recent Activity Logs (Newest First)</h3>
+    {% if activity_logs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>Active Window Title</th>
+                    <!-- Add more columns if you track more data -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in activity_logs %}
+                    <tr>
+                        <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>{{ log.active_window_title }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No activity logs available for this employee.</p>
+    {% endif %}
+
+    <br>
+    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+{% endblock %}

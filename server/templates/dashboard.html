@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Employee Monitor{% endblock %}
+
+{% block content %}
+    <h2>Employee Dashboard</h2>
+    {% if employees %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Name (if known)</th>
+                    <th>First Seen (UTC)</th>
+                    <th>Last Seen (UTC)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                    <tr>
+                        <td>{{ emp.employee_id }}</td>
+                        <td>{{ emp.get('name', 'N/A') }}</td>
+                         <td>{{ emp.first_seen.strftime('%Y-%m-%d %H:%M:%S') if emp.first_seen else 'N/A' }}</td>
+                        <td>{{ emp.last_seen.strftime('%Y-%m-%d %H:%M:%S') if emp.last_seen else 'N/A' }}</td>
+                        <td><a href="{{ url_for('main.employee_detail', employee_id=emp.employee_id) }}">View Details</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No employees found or data available yet.</p>
+    {% endif %}
+{% endblock %}

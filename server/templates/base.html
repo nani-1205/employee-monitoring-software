@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Employee Monitor{% endblock %}</title>
+    <!-- Simple CSS Reset -->
+    <style>
+        body { font-family: sans-serif; margin: 0; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        header { background-color: #333; color: #fff; padding: 10px 20px; margin-bottom: 20px; }
+        header h1 { margin: 0; float: left; }
+        nav { float: right; }
+        nav ul { list-style: none; margin: 0; padding: 0; }
+        nav ul li { display: inline-block; margin-left: 15px; }
+        nav a { color: #fff; text-decoration: none; }
+        nav a:hover { text-decoration: underline; }
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash.warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .flash.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+        footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ccc; font-size: 0.9em; color: #777; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        img.thumbnail { max-width: 200px; max-height: 150px; border: 1px solid #ccc; margin: 5px; }
+        .screenshot-gallery { display: flex; flex-wrap: wrap; gap: 10px; }
+        .screenshot-item { border: 1px solid #eee; padding: 5px; text-align: center; }
+        .screenshot-item p { font-size: 0.8em; margin: 5px 0 0 0; }
+        /* Add custom styles in static/css/style.css */
+        {% block head_extra %}{% endblock %}
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="clearfix">
+        <h1><a href="{{ url_for('main.dashboard') }}" style="color: #fff; text-decoration: none;">Employee Monitor</a></h1>
+        <nav>
+            <ul>
+                {% if session.user_id %}
+                    <li><span>Welcome, {{ session.username }}</span></li>
+                    <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('main.login') }}">Login</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        Employee Monitoring System | <strong style="color: red;">WARNING: Ensure legal compliance and ethical use.</strong>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>

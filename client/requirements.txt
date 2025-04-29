@@ -1,0 +1,8 @@
+requests>=2.25
+mss>=6.1
+# Platform Specific (Install only one based on target OS)
+# For Windows:
+pywin32>=300
+# For macOS:
+# pyobjc-framework-Quartz>=8.0  # May need specific versions depending on Python/macOS
+# pyobjc-framework-Cocoa>=8.0
