@@ -6,3 +6,4 @@ pywin32>=300
 # For macOS:
 # pyobjc-framework-Quartz>=8.0  # May need specific versions depending on Python/macOS
 # pyobjc-framework-Cocoa>=8.0
+pyinstaller>=5.0  # For creating standalone executables
