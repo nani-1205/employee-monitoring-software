@@ -11,11 +11,11 @@ import logging # Basic logging for the client
 # --- Configuration ---
 # IMPORTANT: These should ideally be configured during deployment/build, not hardcoded directly.
 #            Maybe read from a config file or environment variables.
-SERVER_URL = "http://YOUR_CENTOS_SERVER_IP:5000" # REPLACE WITH ACTUAL SERVER IP/DOMAIN
+SERVER_URL = "http://18.60.111.172:5000" # REPLACE WITH ACTUAL SERVER IP/DOMAIN
 EMPLOYEE_ID = "EMP001" # REPLACE with a unique ID for each employee/installation
 REPORT_INTERVAL_SECONDS = 60  # Send activity report every 60 seconds
 SCREENSHOT_INTERVAL_SECONDS = 300 # Take screenshot every 5 minutes (300 seconds)
-CLIENT_SECRET_KEY = "default_client_secret" # REPLACE with the actual secret key from server config
+CLIENT_SECRET_KEY = "YOUR_STRONG_SHARED_SECRET_BETWEEN_SERVER_AND_CLIENTS" # REPLACE with the actual secret key from server config
 
 # --- Logging Setup ---
 # In a real scenario, log to a file, especially for background processes
