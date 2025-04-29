@@ -11,7 +11,7 @@ import logging # Basic logging for the client
 
 # --- Configuration ---
 # IMPORTANT: Replace placeholders before building!
-SERVER_URL = "http://18.50.111.172:5000" # <-- REPLACE WITH YOUR ACTUAL SERVER IP/DOMAIN
+SERVER_URL = "http://10.0.1.126:5000" # <-- REPLACE WITH YOUR ACTUAL SERVER IP/DOMAIN
 EMPLOYEE_ID = "EMP001" # <-- REPLACE with a unique ID for each employee/installation
 REPORT_INTERVAL_SECONDS = 60  # Send activity report every 60 seconds
 SCREENSHOT_INTERVAL_SECONDS = 300 # Take screenshot every 5 minutes (300 seconds)
