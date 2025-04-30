@@ -11,10 +11,10 @@ import logging # Basic logging for the client
 
 # --- Configuration ---
 # IMPORTANT: Replace placeholders before building!
-SERVER_URL = "http://10.0.1.126:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
+SERVER_URL = "http://10.0.1.142:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
 EMPLOYEE_ID = "EMP001" # <-- REPLACE with a unique ID for each employee/installation
 REPORT_INTERVAL_SECONDS = 60  # Send activity report every 60 seconds
-SCREENSHOT_INTERVAL_SECONDS = 300 # Take screenshot every 5 minutes (300 seconds)
+SCREENSHOT_INTERVAL_SECONDS = 120 # Take screenshot every 2 minutes (120 seconds)
 CLIENT_SECRET_KEY = "YOUR_STRONG_SHARED_SECRET_BETWEEN_SERVER_AND_CLIENTS" # <-- REPLACE with the actual secret key from server config
 
 # --- Logging Setup ---
