@@ -3,7 +3,7 @@
 
 #define MyAppName "Monitor Agent"
 #define MyAppVersion "1.0"
-#define MyAppPublisher "Your Company Name"  ; <-- REPLACE THIS
+#define MyAppPublisher "nani-solutions"  ; <-- REPLACE THIS
 #define MyAppExeName "MonitorAgent.exe"
 #define MyAppLogSubdir "MonitorAgent\Logs" ; Subdirectory under ProgramData
 
@@ -11,7 +11,7 @@
 ; NOTE: The value of AppId uniquely identifies this application.
 ; ** Generate a new GUID and replace the placeholder below **
 ; Example: AppId={{12345678-ABCD-1234-ABCD-1234567890AB}}
-AppId={{YOUR_UNIQUE_GUID}} ; <-- REPLACE THIS with a real GUID
+AppId={{12345678-ABCD-1234-ABCD-1234567890AB}} ; <-- REPLACE THIS with a real GUID
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -36,7 +36,7 @@ Name: "startup"; Description: "Run Monitor Agent automatically on Windows startu
 [Files]
 ; Copy your built EXE to the installation directory ({app})
 ; *** IMPORTANT: Update the Source path below to your actual built EXE location ***
-Source: "C:\path\to\your\dist\MonitorAgent.exe"; DestDir: "{app}"; Flags: ignoreversion  ; <-- REPLACE SOURCE PATH
+Source: "C:\Users\Administrator\Desktop\employee-monitoring-software\client\dist\MonitorAgent.exe"; DestDir: "{app}"; Flags: ignoreversion  ; <-- REPLACE SOURCE PATH
 ; Note: If you have other required files (e.g., config.ini), add them here too.
 
 [Dirs]
