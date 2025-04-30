@@ -11,7 +11,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; ** Using a unique generated GUID **
-AppId={{A7E8C5D2-9F1B-4A9C-8D3E-0F7B1A2C3D4E}} ; <-- UNIQUE GUID INSERTED
+AppId={{A7E8C5D2-9F1B-4A9C-8D3E-0F7B1A2C3D4E}} ; Unique GUID inserted
 
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -48,7 +48,8 @@ Name: "startup"; Description: "Run Monitor Agent automatically on Windows startu
 ; Specifies the files to be installed
 ; Copy your built EXE from the PyInstaller dist folder to the installation directory ({app})
 ; *** Path updated based on previous build logs ***
-Source: "C:\Users\Administrator\Desktop\employee-monitoring-software\client\dist\MonitorAgent.exe"; DestDir: "{app}"; Flags: ignoreversion  ; <-- Path updated
+; The following Source path points to the EXE built by PyInstaller
+Source: "C:\Users\Administrator\Desktop\employee-monitoring-software\client\dist\MonitorAgent.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Note: If you have other required files (e.g., config.ini, other DLLs), add them here too:
 ; Source: "C:\path\to\your\otherfile.dll"; DestDir: "{app}"
