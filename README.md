@@ -202,6 +202,7 @@ This project provides a basic system for monitoring employee computer activity. 
 
 ## Troubleshooting
 
+
 *   **Client Not Appearing:** Check client logs (`C:\ProgramData\MonitorAgent\Logs\*`), check Task Manager, check antivirus/firewall on client, check network connectivity (using Private IP) from client to server (`Test-NetConnection`), check server logs (`pm2 logs MonitorServer`).
 *   **Data Not Saving:** Check server logs for database errors, check MongoDB connection/authentication, check server disk space.
 *   **Installer Errors:** Check Inno Setup documentation, ensure paths in `.iss` are correct, ensure admin rights are used.
