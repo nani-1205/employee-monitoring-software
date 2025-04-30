@@ -12,7 +12,7 @@ import logging
 
 # --- Configuration (Hardcoded Values) ---
 # IMPORTANT: You MUST edit EMPLOYEE_ID before building for each user!
-SERVER_URL = "http://10.0.1.126:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
+SERVER_URL = "http://10.0.1.142:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
 EMPLOYEE_ID = "EMP001" # <-- REPLACE with the unique ID for this specific installation
 # Employee Name is no longer handled by the client in this version
 CLIENT_SECRET_KEY = "YOUR_STRONG_SHARED_SECRET_BETWEEN_SERVER_AND_CLIENTS" # <-- REPLACE this secret key
