@@ -8,120 +8,52 @@ import io
 import os
 from datetime import datetime, timezone
 import logging
-import configparser # Import configparser
+# Removed: import configparser
 
-# --- Configuration (Defaults/Placeholders - will be overridden by config file) ---
-# Server URL might still be hardcoded, or could also be moved to config.ini
-SERVER_URL = "http://10.0.1.142:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
+# --- Configuration (Hardcoded Values) ---
+# IMPORTANT: You MUST edit EMPLOYEE_ID before building for each user!
+SERVER_URL = "http://10.0.1.126:5000" # <-- USE PRIVATE IP IF IN SAME VPC, OR PUBLIC IP
+EMPLOYEE_ID = "EMP001" # <-- REPLACE with the unique ID for this specific installation
+# Employee Name is no longer handled by the client in this version
 CLIENT_SECRET_KEY = "YOUR_STRONG_SHARED_SECRET_BETWEEN_SERVER_AND_CLIENTS" # <-- REPLACE this secret key
-
-# --- Global Variables for Configured Values ---
-# Initialize with defaults or None, will be set by load_configuration()
-CONFIGURED_EMPLOYEE_ID = "UNKNOWN_EMP_ID"
-CONFIGURED_EMPLOYEE_NAME = "Unknown Employee"
-CONFIG_FILE_PATH = "" # Will be set in load_configuration
+REPORT_INTERVAL_SECONDS = 60
+SCREENSHOT_INTERVAL_SECONDS = 300
 
 # --- Logging Setup ---
 # Logs will still go to C:\ProgramData\MonitorAgent\Logs
 PROGRAMDATA_PATH = os.environ.get('PROGRAMDATA', 'C:\\ProgramData')
 LOG_DIR_BASE = os.path.join(PROGRAMDATA_PATH, 'MonitorAgent', 'Logs')
-CONFIG_DIR_BASE = os.path.join(PROGRAMDATA_PATH, 'MonitorAgent') # Config base dir
 
+# Ensure log directory exists (installer creates it, but be defensive)
 try:
     os.makedirs(LOG_DIR_BASE, exist_ok=True)
 except OSError as e:
     sys.stderr.write(f"ERROR: Cannot create log directory {LOG_DIR_BASE}: {e}\n")
+    # Fallback log location (might fail if in Program Files)
     if getattr(sys, 'frozen', False):
         log_dir = os.path.dirname(sys.executable)
     else:
         log_dir = os.path.dirname(__file__)
-    log_filepath = os.path.join(log_dir, f"monitor_agent_UNKNOWN_fallback.log") # Use default if ID unknown
+    log_filepath = os.path.join(log_dir, f"monitor_agent_{EMPLOYEE_ID}_fallback.log")
 else:
-     # Log filename will be updated after reading config
-     log_filepath = os.path.join(LOG_DIR_BASE, f"monitor_agent_UNKNOWN.log")
+     # Use the correct log directory and the hardcoded Employee ID
+     log_filepath = os.path.join(LOG_DIR_BASE, f"monitor_agent_{EMPLOYEE_ID}.log")
 
-# --- Configure Logging (Initial setup, will reconfigure filename later) ---
+# --- Configure Logging ---
 log_handlers = [logging.StreamHandler(sys.stdout)]
 try:
-    # Use a temporary file handler until config is read
-    temp_file_handler = logging.FileHandler(log_filepath)
-    log_handlers.append(temp_file_handler)
+    log_handlers.append(logging.FileHandler(log_filepath))
 except Exception as e:
-    sys.stderr.write(f"ERROR: Cannot create initial file handler for {log_filepath}: {e}\n")
+    sys.stderr.write(f"ERROR: Cannot create file handler for {log_filepath}: {e}\n")
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO, # Change to logging.DEBUG for more detailed logs
     format='%(asctime)s - %(levelname)s - [%(threadName)s] - %(message)s',
     handlers=log_handlers,
-    force=True # Force reconfiguration if needed
+    force=True # Allow reconfiguration if needed (though not done here anymore)
 )
 logger = logging.getLogger(__name__)
-logger.info(f"Initial logging setup. Log file intended path: {log_filepath}")
-
-
-# --- Load Configuration Function ---
-def load_configuration():
-    global CONFIGURED_EMPLOYEE_ID, CONFIGURED_EMPLOYEE_NAME, CONFIG_FILE_PATH, logger, log_filepath
-
-    config_filename = "monitor_config.ini"
-    # Config file expected in C:\ProgramData\MonitorAgent\monitor_config.ini
-    CONFIG_FILE_PATH = os.path.join(CONFIG_DIR_BASE, config_filename)
-    logger.info(f"Attempting to load configuration from: {CONFIG_FILE_PATH}")
-
-    if not os.path.exists(CONFIG_FILE_PATH):
-        logger.error(f"Configuration file not found: {CONFIG_FILE_PATH}")
-        # Stick with defaults/placeholders - agent might not work correctly
-        return False
-
-    config = configparser.ConfigParser()
-    try:
-        config.read(CONFIG_FILE_PATH)
-        if 'Agent' in config:
-            CONFIGURED_EMPLOYEE_ID = config['Agent'].get('EmployeeID', CONFIGURED_EMPLOYEE_ID)
-            CONFIGURED_EMPLOYEE_NAME = config['Agent'].get('EmployeeName', CONFIGURED_EMPLOYEE_NAME)
-            logger.info(f"Configuration loaded: ID='{CONFIGURED_EMPLOYEE_ID}', Name='{CONFIGURED_EMPLOYEE_NAME}'")
-
-            # --- Reconfigure Log Filename ---
-            new_log_filepath = os.path.join(LOG_DIR_BASE, f"monitor_agent_{CONFIGURED_EMPLOYEE_ID}.log")
-            if new_log_filepath != log_filepath:
-                 logger.info(f"Updating log file path to: {new_log_filepath}")
-                 # Remove old handler, add new one
-                 root_logger = logging.getLogger()
-                 old_handler = None
-                 for h in root_logger.handlers:
-                     if isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == log_filepath:
-                         old_handler = h
-                         break
-                 if old_handler:
-                     root_logger.removeHandler(old_handler)
-                     old_handler.close()
-
-                 try:
-                     new_file_handler = logging.FileHandler(new_log_filepath)
-                     # Use the same formatter as basicConfig
-                     formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(threadName)s] - %(message)s')
-                     new_file_handler.setFormatter(formatter)
-                     root_logger.addHandler(new_file_handler)
-                     log_filepath = new_log_filepath # Update global path
-                     logger.info("Successfully reconfigured file logger.")
-                 except Exception as e:
-                     logger.error(f"Failed to create new file handler for {new_log_filepath}: {e}")
-                     # Attempt to re-add the old handler if possible? Or just log to console.
-                     if old_handler:
-                         root_logger.addHandler(old_handler) # Put back the old one if new failed
-
-
-            return True
-        else:
-            logger.error(f"Missing [Agent] section in configuration file: {CONFIG_FILE_PATH}")
-            return False
-
-    except configparser.Error as e:
-        logger.error(f"Error parsing configuration file {CONFIG_FILE_PATH}: {e}")
-        return False
-    except Exception as e:
-         logger.error(f"Unexpected error loading configuration: {e}", exc_info=True)
-         return False
+logger.info(f"Logging initialized. Log file path: {log_filepath}")
 
 
 # --- Platform Specific Imports ---
@@ -145,7 +77,7 @@ except ImportError as e:
 
 # --- Global State ---
 last_screenshot_time = 0
-identity_reported = False # Flag to ensure identity is reported only once
+# Removed: identity_reported flag
 
 # --- Core Functions ---
 def get_utc_timestamp_iso():
@@ -155,51 +87,11 @@ def get_utc_timestamp_iso():
     logger.debug(f"Generated timestamp: {iso_string}")
     return iso_string
 
-# --- NEW Function: Report Identity ---
-def send_identity_report():
-    """Sends Employee ID and Name to the server."""
-    global CONFIGURED_EMPLOYEE_ID, CONFIGURED_EMPLOYEE_NAME, SERVER_URL, CLIENT_SECRET_KEY, identity_reported
-
-    # Use configured values read from file
-    employee_id = CONFIGURED_EMPLOYEE_ID
-    employee_name = CONFIGURED_EMPLOYEE_NAME
-
-    if employee_id == "UNKNOWN_EMP_ID":
-        logger.error("Cannot report identity: Employee ID is unknown (config load failed?).")
-        return False
-
-    logger.info(f"Attempting to report identity for ID: {employee_id}, Name: {employee_name}")
-
-    payload = {
-        "employee_id": employee_id,
-        "name": employee_name,
-        "timestamp_utc": get_utc_timestamp_iso() # Include timestamp for context
-    }
-    headers = {'X-Client-Secret': CLIENT_SECRET_KEY, 'Content-Type': 'application/json'}
-
-    try:
-        url = f"{SERVER_URL}/api/report_identity" # New endpoint
-        logger.info(f"Posting identity report to {url}")
-        response = requests.post(url, json=payload, headers=headers, timeout=15)
-        response.raise_for_status()
-        logger.info(f"Identity report sent successfully. Status: {response.status_code}, Response: {response.text}")
-        identity_reported = True # Mark as reported
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send identity report: {e}")
-        if e.response is not None:
-             logger.error(f"Server response: Status={e.response.status_code}, Text={e.response.text}")
-        return False # Will retry on next agent start
-    except Exception as e:
-        logger.error(f"An unexpected error occurred sending identity report: {e}", exc_info=True)
-        return False
-
+# Removed: send_identity_report() function
 
 def send_activity_report():
     """Collects and sends activity data to the server."""
-    # Uses CONFIGURED_EMPLOYEE_ID directly now
-    employee_id = CONFIGURED_EMPLOYEE_ID
-    # ... rest of the function is the same, just uses employee_id variable ...
+    # Uses the hardcoded EMPLOYEE_ID constant
     current_thread = threading.current_thread()
     current_thread.name = f"ActivityReportThread-{current_thread.ident}"
     logger.info("Activity report thread started.")
@@ -214,7 +106,7 @@ def send_activity_report():
         logger.error(f"Error getting system info: {e}", exc_info=True)
 
     payload = {
-        "employee_id": employee_id, # Use configured ID
+        "employee_id": EMPLOYEE_ID, # Use hardcoded constant
         "timestamp_utc": timestamp,
         "active_window": active_window,
         "system_idle_time": int(idle_time)
@@ -238,9 +130,7 @@ def send_activity_report():
 
 def take_and_send_screenshot():
     """Takes a screenshot and uploads it to the server."""
-    # Uses CONFIGURED_EMPLOYEE_ID directly now
-    employee_id = CONFIGURED_EMPLOYEE_ID
-    # ... rest of the function is the same, just uses employee_id variable ...
+    # Uses the hardcoded EMPLOYEE_ID constant
     current_thread = threading.current_thread()
     current_thread.name = f"ScreenshotThread-{current_thread.ident}"
     logger.info("Screenshot thread started.")
@@ -259,7 +149,7 @@ def take_and_send_screenshot():
         screenshot_filename = f"{timestamp_dt.strftime('%Y%m%d_%H%M%S')}.png"
         files = {'screenshot': (screenshot_filename, img_file, 'image/png')}
         payload = {
-            'employee_id': employee_id, # Use configured ID
+            'employee_id': EMPLOYEE_ID, # Use hardcoded constant
             'timestamp_utc': timestamp_iso
         }
         headers = {'X-Client-Secret': CLIENT_SECRET_KEY}
@@ -286,33 +176,21 @@ def take_and_send_screenshot():
 
 # --- Main Loop ---
 def main_loop():
-    global last_screenshot_time, identity_reported
-
-    # --- LOAD CONFIGURATION FIRST ---
-    if not load_configuration():
-        logger.critical("Failed to load essential configuration. Agent might not function correctly. Exiting?")
-        # Decide if you want to exit or try to run with defaults
-        # For now, we'll continue with potentially wrong defaults, but log critical error
-        # return # Uncomment to exit if config fails
+    global last_screenshot_time
+    # Removed: load_configuration() call
 
     main_thread = threading.current_thread()
     main_thread.name = "MainThread"
 
     logger.info(f"Client agent starting...")
-    # Log configured values
-    logger.info(f"Employee ID (from config): {CONFIGURED_EMPLOYEE_ID}")
-    logger.info(f"Employee Name (from config): {CONFIGURED_EMPLOYEE_NAME}")
+    # Log hardcoded values
+    logger.info(f"Employee ID (Hardcoded): {EMPLOYEE_ID}")
     logger.info(f"Server URL: {SERVER_URL}")
     logger.info(f"Report Interval: {REPORT_INTERVAL_SECONDS}s, Screenshot Interval: {SCREENSHOT_INTERVAL_SECONDS}s")
 
     last_screenshot_time = time.time() - SCREENSHOT_INTERVAL_SECONDS
 
-    # --- Attempt to report identity ONCE on startup ---
-    if not identity_reported:
-        # Run in a separate thread so it doesn't block the main loop start
-        identity_thread = threading.Thread(target=send_identity_report, daemon=True)
-        identity_thread.start()
-        # Note: We don't strictly wait for it. If it fails, it won't retry until agent restarts.
+    # Removed: Identity reporting logic
 
     while True:
         current_time = time.time()

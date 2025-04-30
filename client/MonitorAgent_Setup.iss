@@ -1,5 +1,6 @@
 ; Inno Setup Script for MonitorAgent
 ; Save this as MonitorAgent_Setup.iss in the 'client' directory
+; VERSION: Does NOT ask for Employee ID/Name during install. Relies on hardcoded values in MonitorAgent.exe
 
 ; --- Application Definitions ---
 #define MyAppName "Monitor Agent"
@@ -7,7 +8,7 @@
 #define MyAppPublisher "nani-solutions"  ; Publisher updated
 #define MyAppExeName "MonitorAgent.exe"
 #define MyAppLogSubdir "MonitorAgent\Logs" ; Subdirectory under ProgramData for logs
-#define MyAppConfigFileName "monitor_config.ini" ; Config file name
+; Removed MyAppConfigFileName definition
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -58,11 +59,9 @@ Source: "C:\Users\Administrator\Desktop\employee-monitoring-software\client\dist
 [Dirs]
 ; Specifies directories to be created during installation
 ; Create log directory under ProgramData
+; Permissions: grant Authenticated Users modify rights so the agent process can write logs
 Name: "{commonappdata}\{#MyAppLogSubdir}"; Permissions: authusers-modify
-
-; Create base config directory under ProgramData (e.g., C:\ProgramData\MonitorAgent)
-; This directory will hold the monitor_config.ini file
-Name: "{commonappdata}\{#MyAppName}"; Permissions: authusers-modify
+; Removed entry for base config directory
 
 [Icons]
 ; Optional: Create Start Menu icons (comment out the first line if not needed)
@@ -90,8 +89,9 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: no
 ; Specifies files and directories to be deleted during uninstallation
 ; Removes the main application installation directory and all its contents
 Type: filesandordirs; Name: "{app}"
-; Removes the base config/log directory created under ProgramData
-Type: filesandordirs; Name: "{commonappdata}\{#MyAppName}"
+; Removes the log directory created under ProgramData
+Type: filesandordirs; Name: "{commonappdata}\{#MyAppLogSubdir}"
+; Removed entry for base config directory
 
 [UninstallRegistry]
 ; Removes registry keys during uninstallation
@@ -99,91 +99,6 @@ Type: filesandordirs; Name: "{commonappdata}\{#MyAppName}"
 Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "{#MyAppName}"; Tasks: startup
 
 ; ======================================================================
-; Custom Code Section for Employee ID and Name Input
+; REMOVED Custom Code Section for Employee ID and Name Input
 ; ======================================================================
-[Code]
-var
-  EmployeeInfoPage: TInputQueryWizardPage;
-  EmployeeID, EmployeeName: string;
-
-// Function called when the wizard initializes
-procedure InitializeWizard;
-begin
-  // Create a new page after the 'Select Destination Location' page
-  EmployeeInfoPage := CreateInputQueryPage(wpSelectDir,
-    'Employee Information', 'Please provide employee details',
-    'Enter the unique Employee ID and Name for this installation.');
-
-  // Add input fields to the page
-  EmployeeInfoPage.Add('Employee ID:', False); // Field index 0, not password
-  EmployeeInfoPage.Add('Employee Name:', False); // Field index 1, not password
-
-  // Optional: Set initial values if needed (e.g., from a previous install)
-  // EmployeeInfoPage.Values[0] := 'EMP';
-  // EmployeeInfoPage.Values[1] := '';
-end;
-
-// Function called when the user clicks Next on any page
-// We use it to validate the input on our custom page
-function NextButtonClick(CurPageID: Integer): Boolean;
-begin
-  Result := True; // Assume validation passes unless proven otherwise
-  if CurPageID = EmployeeInfoPage.ID then begin
-    EmployeeID := Trim(EmployeeInfoPage.Values[0]);
-    EmployeeName := Trim(EmployeeInfoPage.Values[1]);
-    if EmployeeID = '' then begin
-      MsgBox('Please enter an Employee ID.', mbError, MB_OK); // Standard constants usually work here
-      Result := False; // Prevent moving to the next page
-    end else
-    if EmployeeName = '' then begin
-       MsgBox('Please enter an Employee Name.', mbError, MB_OK); // Standard constants usually work here
-       Result := False; // Prevent moving to the next page
-    end;
-    // Optional: Add more validation for EmployeeID format if needed
-  end;
-end;
-
-// Function called after files are copied (part of the Install step)
-// This is where we write the config file
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ConfigPath: string;
-  ConfigLines: TStringList;
-begin
-  // Only run this code after the main installation step completes
-  // (ssPostInstall runs after the [Run] section, ssInstall runs before [Run])
-  // Let's use ssInstall to ensure config is written before optional [Run] execution
-  if CurStep = ssInstall then begin
-    // Re-capture values directly from the page just before writing
-    // Ensures we have the latest input if the user went back and forth
-    EmployeeID := Trim(EmployeeInfoPage.Values[0]);
-    EmployeeName := Trim(EmployeeInfoPage.Values[1]);
-
-    // Construct the path to the config file: C:\ProgramData\MonitorAgent\monitor_config.ini
-    ConfigPath := ExpandConstant('{commonappdata}\{#MyAppName}\{#MyAppConfigFileName}');
-    Log(Format('Writing configuration to: %s', [ConfigPath]));
-
-    ConfigLines := TStringList.Create;
-    try
-      // Make sure base directory exists (created in [Dirs])
-      ForceDirectories(ExtractFilePath(ConfigPath));
-
-      ConfigLines.Add('[Agent]');
-      ConfigLines.Add(Format('EmployeeID = %s', [EmployeeID]));
-      ConfigLines.Add(Format('EmployeeName = %s', [EmployeeName]));
-      // Add other config options here if needed in the future
-      // ConfigLines.Add('ServerURL = http://...'); // Could potentially set this here too
-
-      if SaveStringsToFile(ConfigPath, ConfigLines, False) then begin
-        Log('Successfully wrote config file.');
-      end else begin
-        // Show error but allow install to continue; agent might fail later
-        // *** CORRECTED LINE BELOW - Using named constants, no trailing comment ***
-        MsgBox('Warning: Failed to write configuration file to ' + ConfigPath + '.'#13#10 + 'The agent may not function correctly.', mbWarning, MB_OK);
-        Log('ERROR: Failed to write config file.');
-      end;
-    finally
-      ConfigLines.Free;
-    end;
-  end;
-end;
+; [Code] section removed entirely
