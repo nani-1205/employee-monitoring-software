@@ -178,8 +178,8 @@ begin
         Log('Successfully wrote config file.');
       end else begin
         // Show error but allow install to continue; agent might fail later
-        // *** CORRECTED LINE BELOW - Removed trailing comment ***
-        MsgBox('Warning: Failed to write configuration file to ' + ConfigPath + '.'#13#10 + 'The agent may not function correctly.', 48, 0);
+        // *** CORRECTED LINE BELOW - Using named constants, no trailing comment ***
+        MsgBox('Warning: Failed to write configuration file to ' + ConfigPath + '.'#13#10 + 'The agent may not function correctly.', mbWarning, MB_OK);
         Log('ERROR: Failed to write config file.');
       end;
     finally
