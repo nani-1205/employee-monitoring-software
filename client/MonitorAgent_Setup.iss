@@ -132,11 +132,11 @@ begin
     EmployeeID := Trim(EmployeeInfoPage.Values[0]);
     EmployeeName := Trim(EmployeeInfoPage.Values[1]);
     if EmployeeID = '' then begin
-      MsgBox('Please enter an Employee ID.', mbError, MB_OK);
+      MsgBox('Please enter an Employee ID.', mbError, MB_OK); // Standard constants usually work here
       Result := False; // Prevent moving to the next page
     end else
     if EmployeeName = '' then begin
-       MsgBox('Please enter an Employee Name.', mbError, MB_OK);
+       MsgBox('Please enter an Employee Name.', mbError, MB_OK); // Standard constants usually work here
        Result := False; // Prevent moving to the next page
     end;
     // Optional: Add more validation for EmployeeID format if needed
@@ -178,7 +178,8 @@ begin
         Log('Successfully wrote config file.');
       end else begin
         // Show error but allow install to continue; agent might fail later
-        MsgBox('Warning: Failed to write configuration file to ' + ConfigPath + '.'#13#10 + 'The agent may not function correctly.', mbWarning, MB_OK);
+        // *** CORRECTED LINE BELOW ***
+        MsgBox('Warning: Failed to write configuration file to ' + ConfigPath + '.'#13#10 + 'The agent may not function correctly.', 48, 0); // 48=mbWarning, 0=MB_OK
         Log('ERROR: Failed to write config file.');
       end;
     finally
